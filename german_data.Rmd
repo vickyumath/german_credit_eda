@@ -1,0 +1,410 @@
+---
+title: "Untitled"
+author: "vijendra"
+date: "July 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pastecs)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(ROCR)
+library(rpart)
+```
+
+# AIM
+
+* To predict whether the credit profile of a client is good or bad.
+* To analyse the imformation of our past customers and build a machine learning model to predict with some confidence whether the new applicants will turn out be a defaulter.
+
+# ABOUT DATA
+
+* The dataset was collected by Prof. Hans Hofmann of Hamburg University in 1994. This dataset is now publicaly available at UCI ML Repository. It can be downloaded from here.
+
+* The dataset contains 1000 samples with 21 features 14 of which are categorical and 7 are numeric. It contains no missing data. Some basic transformations were applied on the dataset such as coding the classes in categorical variables. For eg, Status was coded into A11 & A12
+
+* The attributes(features) are as follows :
+
+    + check.acc.: (qualitative) Status of existing checking account
+    + Duration: (numerical) Duration in month
+    + Cred_hist.: (qualitative) Credit history
+    + Purpose: (qualitative) Purpose of loan
+    + Cred_amt: (numerical) Credit amount
+    + saving_bond: (qualitative) Savings account/bonds
+    + employ_since: (qualitative) Present employment since
+    + Installment_rate: (numerical) Installment rate in percentage of disposable income
+    + personal_status: (qualitative) Personal status and sex
+    + other_debtors: (qualitative) Other debtors / guarantors
+    + residence_since: (numerical) Present residence since
+    + property: (qualitative) Property
+    + age: (numerical) Age in years
+    + other_install_plans: (qualitative) Other installment plans
+    + housing: (qualitative) Housing
+    + no.of_exist_credit: (numerical) Number of existing credits at this bank
+    + job: (qualitative) Job
+    + dependents: (numerical) Number of people being liable to provide maintenance for
+    + telephone: (qualitative) Telephone
+    + foreign_worker: (qualitative) foreign worker
+
+* The target variable is binary classification:
+
+    + 1 - Good Credit
+    + 0 - Bad Credit
+    
+    
+# DATA PREPROCESSING
+
+
+We need to assign attribute names to the data set.    
+
+```{r}
+my_data <- read.table("german.data",sep="",header=FALSE, col.names = c("check.acc ","duration","cred_hist ","Purpose","Cred_amt","saving_bond","employ_since","Installment_rate","personal_status","other_debtors","residence_since","property ","age","other_install_plans","housing ","no.of_exist_cred","job","dependents","telephone","foreign_worker","status"),stringsAsFactors = FALSE)
+```
+
+Check missing data if any:
+```{r}
+head(my_data)
+sum(is.na(my_data))
+```
+
+Replacing the bad credit status with 0 value.
+```{r}
+my_data$status[my_data$status==2]<-0
+table(my_data$status)
+head(my_data)
+```
+
+Check the structure and the summary of the data
+```{r}
+str(my_data)
+summary(my_data)
+```
+
+# Distribution Plot for the Numerical Data
+
+```{r}
+p1 <-ggplot(my_data, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+p2 <- ggplot(my_data, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+
+grid.arrange(p1,p2,nrow=1)
+
+```
+
+* The graphs depicts that the data are right skewed for age and cred amounts
+* The age data is dense in 25-40 range that means major data comes from working class.
+
+
+```{r}
+p3 <- ggplot(my_data, aes(x= Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = .2, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+p4 <- ggplot(my_data, aes(x= residence_since)) +geom_histogram(aes(y=..density..),binwidth = .2, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+
+grid.arrange(p3,p4,nrow=1)
+```
+
+* Graphs are multimodal means higher chances that data does not follow  normal distribution 
+
+```{r}
+p5 <- ggplot(my_data, aes(x= duration)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+p6 <- ggplot(my_data, aes(x = no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.05, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+
+grid.arrange(p5,p6,nrow=1)
+```
+*  Graphs are multimodal and slightly right skewed.
+
+
+# Countplots for categorical features
+
+* 
+
+
+```{r}
+
+```
+
+  
+
+```{r}
+ggplot(my_data, aes(x= dependents)) +geom_histogram(aes(y=..density..),binwidth = 0.01, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
+```
+
+# Splitting Data (Train - Test - Validation )
+
+splitting the data into (60,20,20)%
+```{r}
+set.seed(100)
+split_data <- sample(1:3, size=nrow(my_data), prob=c(0.600,0.200,0.200), replace = TRUE)
+train <- my_data[split_data==1,]
+test <- my_data[split_data==2,]
+validation <- my_data[split_data==3,]
+```
+
+#TRAIN & TEST DISTRIBUTION
+
+* Comparing test and train distribution by qq plot
+
+```{r}
+p1 <- ggplot(train, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")
+p2 <- ggplot(test, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "text")
+
+grid.arrange(p1,p2,nrow= 1)
+
+```
+
+```{r}
+p1 <-ggplot(train, aes(x=duration)) +geom_histogram(aes(y=..density..),binwidth = 1, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+ylab("")+geom_text(x=55,y=0.20,label = "train")
+p2 <-ggplot(test, aes(x=duration)) +geom_histogram(aes(y=..density..),binwidth = 1, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+ylab("")+geom_text(x=55,y=0.20,label = "text")
+
+grid.arrange(p1,p2,nrow= 1)
+ 
+```
+
+```{r}
+p1 <-ggplot(train, aes(x=residence_since)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")+geom_text(x=2.5,y=2,label = "train")
+p2 <-ggplot(test, aes(x=residence_since)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2,label = "text")
+
+grid.arrange(p1,p2,nrow= 1)
+
+```
+
+```{r}
+p1 <-ggplot(train, aes(x=Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "train")
+p2 <-ggplot(test, aes(x=Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "text")
+
+grid.arrange(p1,p2,nrow= 1)
+
+```
+
+```{r}
+p1 <-ggplot(train, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+p2 <-ggplot(test, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+
+grid.arrange(p1,p2,nrow= 1)
+ 
+```
+
+```{r}
+p1 <-ggplot(train, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+p2 <-ggplot(test, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+
+grid.arrange(p1,p2,nrow= 1)
+```
+
+* ** The above plots shows that the test and train data belongs have same type of distribution**
+
+# UNIVARIATE ANALYSIS
+
+* **QQ plot**
+
+```{r}
+qqnorm(train$age,main = "QQ Plot for age",xlab = "",ylab = "")
+qqline(train$age,col = 3,lwd = 3)
+
+qqnorm(train$duration,main = "QQ Plot for duration",xlab = "",ylab = "")
+qqline(train$duration,col = 3,lwd = 3)
+
+qqnorm(train$residence_since,main = "QQ Plot for residence_since",xlab = "",ylab = "")
+qqline(train$residence_since,col = 3,lwd = 3)
+
+qqnorm(train$Installment_rate,main = "QQ Plot for residence_since",xlab = "",ylab = "")
+qqline(train$Installment_rate,col = 3,lwd = 3)
+
+qqnorm(train$no.of_exist_cred,main = "QQ Plot for no.of_exist_cred",xlab = "",ylab = "")
+qqline(train$no.of_exist_cred,col = 3,lwd = 3)
+
+qqnorm(train$Cred_amt,main = "QQ Plot for Cred_amt",xlab = "",ylab = "")
+qqline(train$Cred_amt,col = 3,lwd = 3)
+```
+
+These qq plots helps us to compare our distribution with normal distribution 
+
+
+# OUTLIER TREATMENT
+
+
+* *boxplot plot*
+
+  + Boxplot helps us to analyse the skewness in our dataset and also to detect the outliers.
+  + It is one of the way to display the distribution of data based on the five number summary.
+  
+```{r}
+par(mfrow=c(1,2))
+boxplot(train$duration,col ="cornflowerblue",main="duration")
+boxplot(train$Cred_amt,col ="cornflowerblue",main="Cred_amt")
+```
+
+*Stats for the outliers
+```{r}
+boxplot.stats(train$duration)
+table(boxplot.stats(train$duration)$out)
+boxplot.stats(train$Cred_amt)
+table(boxplot.stats(train$Cred_amt)$out)
+```
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(train$age,col ="cornflowerblue",main="age")
+boxplot(train$no.of_exist_cred,col ="cornflowerblue",main="no.of_exist_cred")
+```
+
+*Stats for the outliers
+
+```{r}
+boxplot.stats(train$age)
+table(boxplot.stats(train$age)$out)
+boxplot.stats(train$no.of_exist_cred)
+table(boxplot.stats(train$no.of_exist_cred)$out)
+```
+```{r}
+par(mfrow=c(1,2))
+boxplot(train$residence_since,col ="cornflowerblue",main="residence_since")
+boxplot(train$Installment_rate,col ="cornflowerblue",main="Installment_rate")
+```
+
+*Stats for the outliers
+
+```{r}
+boxplot.stats(train$residence_since)
+table(boxplot.stats(train$residence_since)$out)
+boxplot.stats(train$Installment_rate)
+table(boxplot.stats(train$Installment_rate)$out)
+```
+
+# Statistical Information
+
+```{r}
+col <- cbind(train$duration, train$Cred_amt, train$Installment_rate ,train$residence_since, train$age, train$no.of_exist_cred,train$dependents,train$status)
+stat.desc(col, basic = FALSE)
+```
+
+# Convetring categorical into numeric variables
+```{r}
+train_new<-train
+train_new$check.acc.<-ifelse(train_new$check.acc.=='A11',0,ifelse(train_new$check.acc.=='A12',1,ifelse(train_new$check.acc.=='A13',2,3)))
+
+train_new$cred_hist.<-ifelse(train_new$cred_hist.=='A30',0,ifelse(train_new$cred_hist.=='A31',1,ifelse(train_new$cred_hist.=='A32',2,ifelse(train_new$cred_hist.=="A33",3,4))))
+table(train_new$cred_hist.)
+
+train_new$Purpose<-ifelse(train_new$Purpose=='A40',0,ifelse(train_new$Purpose=='A41',1,ifelse(train_new$Purpose=='A410',2,ifelse(train_new$Purpose=="A42",3,ifelse(train_new$Purpose=='A43',4,ifelse(train_new$Purpose=='A44',5,ifelse(train_new$Purpose=='A45',6,ifelse(train_new$Purpose=='A46',7,ifelse(train_new$Purpose=='A48',8,9)))))))))
+table(train_new$Purpose)
+
+train_new$saving_bond <-  ifelse(train_new$saving_bond=='A61',0,ifelse(train_new$saving_bond=='A62',1,ifelse(train_new$saving_bond=='A63',2,ifelse(train_new$saving_bond=="A64",3,4))))
+table(train_new$saving_bond) 
+
+train_new$employ_since <- ifelse(train_new$employ_since=='A71',0,ifelse(train_new$employ_since=='A72',1,ifelse(train_new$employ_since=='A73',2,ifelse(train_new$employ_since=="A74",3,4))))
+table(train_new$employ_since)
+
+train_new$personal_status <- ifelse(train_new$personal_status=='A91',0,ifelse(train_new$personal_status=='A92',1,ifelse(train_new$personal_status=='A93',2,3)))
+table(train_new$personal_status)
+
+train_new$property. <- ifelse(train_new$property.=='A121',0,ifelse(train_new$property.=='A122',1,ifelse(train_new$property.=='A123',2,3)))
+table(train_new$property.)
+
+train_new$other_install_plans <-ifelse(train_new$other_install_plans=='A141',0,ifelse(train_new$other_install_plans=='A142',1,2))
+table(train_new$other_install_plans)
+
+train_new$housing. <- ifelse(train_new$housing.=='A151',0,ifelse(train_new$housing.=='A152',1,2))
+table(train_new$housing.)
+
+ train_new$job <- ifelse(train_new$job=='A171',0,ifelse(train_new$job=='A172',1,ifelse(train_new$job=='A173',2,3)))
+table(train_new$job)
+
+train_new$telephone <- ifelse(train_new$telephone=='A191',0,1)  
+table(train_new$telephone)
+
+ train_new$foreign_worker <- ifelse(train_new$foreign_worker=='A201',0,1)
+ table(train_new$foreign_worker)
+ 
+```
+
+```{r}
+valid_new <- validation
+
+valid_new$check.acc.<-ifelse(valid_new$check.acc.=='A11',0,ifelse(valid_new$check.acc.=='A12',1,ifelse(valid_new$check.acc.=='A13',2,3)))
+
+valid_new$cred_hist.<-ifelse(valid_new$cred_hist.=='A30',0,ifelse(valid_new$cred_hist.=='A31',1,ifelse(valid_new$cred_hist.=='A32',2,ifelse(valid_new$cred_hist.=="A33",3,4))))
+table(valid_new$cred_hist.)
+
+valid_new$Purpose<-ifelse(valid_new$Purpose=='A40',0,ifelse(valid_new$Purpose=='A41',1,ifelse(valid_new$Purpose=='A410',2,ifelse(valid_new$Purpose=="A42",3,ifelse(valid_new$Purpose=='A43',4,ifelse(valid_new$Purpose=='A44',5,ifelse(valid_new$Purpose=='A45',6,ifelse(valid_new$Purpose=='A46',7,ifelse(valid_new$Purpose=='A48',8,9)))))))))
+table(valid_new$Purpose)
+
+valid_new$saving_bond <-  ifelse(valid_new$saving_bond=='A61',0,ifelse(valid_new$saving_bond=='A62',1,ifelse(valid_new$saving_bond=='A63',2,ifelse(valid_new$saving_bond=="A64",3,4))))
+table(valid_new$saving_bond) 
+
+valid_new$employ_since <- ifelse(valid_new$employ_since=='A71',0,ifelse(valid_new$employ_since=='A72',1,ifelse(valid_new$employ_since=='A73',2,ifelse(valid_new$employ_since=="A74",3,4))))
+table(valid_new$employ_since)
+
+valid_new$personal_status <- ifelse(valid_new$personal_status=='A91',0,ifelse(valid_new$personal_status=='A92',1,ifelse(valid_new$personal_status=='A93',2,3)))
+table(valid_new$personal_status)
+
+valid_new$property. <- ifelse(valid_new$property.=='A121',0,ifelse(valid_new$property.=='A122',1,ifelse(valid_new$property.=='A123',2,3)))
+table(valid_new$property.)
+
+valid_new$other_install_plans <-ifelse(valid_new$other_install_plans=='A141',0,ifelse(valid_new$other_install_plans=='A142',1,2))
+table(valid_new$other_install_plans)
+
+valid_new$housing. <- ifelse(valid_new$housing.=='A151',0,ifelse(valid_new$housing.=='A152',1,2))
+table(valid_new$housing.)
+
+valid_new$job <- ifelse(valid_new$job=='A171',0,ifelse(valid_new$job=='A172',1,ifelse(valid_new$job=='A173',2,3)))
+table(valid_new$job)
+
+valid_new$telephone <- ifelse(valid_new$telephone=='A191',0,1)  
+table(valid_new$telephone)
+
+valid_new$foreign_worker <- ifelse(valid_new$foreign_worker=='A201',0,1)
+table(valid_new$foreign_worker)
+
+
+```
+```{r}
+model_log <- glm(status~check.acc.,train_new,family = binomial)
+
+library(ROCR)
+valid_new$status.p <- predict(model_log,valid_new,type = "response")
+pred_fit <- prediction(valid_new$status.p,valid_new$status)
+pred_perf <- performance(pred_fit,"tpr","fpr")
+plot(pred_perf)
+Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
+cat("AUC:",Auc_value)
+
+
+```
+
+```{r}
+model_fr<- glm(status~cred_hist.+saving_bond+other_debtors+property.+duration+Cred_amt,train_new,family = binomial)
+ valid_new$status.p <- predict(model_fr,valid_new,type = "response")
+ pred_fit <- prediction(valid_new$status.p,valid_new$status)
+ pred_perf <- performance(pred_fit,"tpr","fpr")
+ plot(pred_perf)
+ Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
+ cat("AUC:",Auc_value)
+```
+ 
+```{r}
+
+```
+ 
+ * *Decision tree*
+```{r}
+model_dt<- rpart(status~.,train,method = "class")
+validation$status.p <- predict(model_dt,validation,type = "class")
+ con_mat <- table(validation$status,validation$status.p)
+model_score <-sum(diag(con_mat))/sum(con_mat)
+ model_score
+ 
+ summary(model_dt)
+ 
+```
+ Looking at summary there are some attributes that have less number of significance. So let's remove them.
+ 
+```{r}
+con_mat <- table(validation$status,validation$status.p)
+model_dtscore <- sum(diag(con_mat))/sum(con_mat)
+model_dtscore 
+
+```
+ The score is more or less same, that means the attributes we removed were overfitting the model.
+ 
