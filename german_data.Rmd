@@ -2,7 +2,10 @@
 title: "Untitled"
 author: "vijendra"
 date: "July 19, 2018"
-output: html_document
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +16,8 @@ library(gridExtra)
 library(dplyr)
 library(ROCR)
 library(rpart)
+
+output_dir <- "output"
 ```
 
 # AIM
@@ -124,6 +129,31 @@ ggplot(my_data, aes(x= dependents)) +geom_histogram(aes(y=..density..),binwidth 
 ```
 
 
+# Countplot for categorical data
+
+```{r}
+ggplot(my_data,aes(x=saving_bond))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=personal_status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=check.acc.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=cred_hist.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=Purpose))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=other_debtors))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=property.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=other_install_plans))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=housing.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x= dependents))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x= job))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=telephone))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+
+```
+
+## Target Variable
+
+```{r}
+ggplot(my_data,aes(x=status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+```
+
+
 # Splitting Data (Train - Test - Validation )
 
 ## Splitting the data into (60,20,20)%
@@ -141,7 +171,7 @@ validation <- my_data[split_data==3,]
 
 ```{r}
 p1 <- ggplot(train, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")
-p2 <- ggplot(test, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "text")
+p2 <- ggplot(test, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
 
@@ -149,7 +179,7 @@ grid.arrange(p1,p2,nrow= 1)
 
 ```{r}
 p1 <-ggplot(train, aes(x=duration)) +geom_histogram(aes(y=..density..),binwidth = 1, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+ylab("")+geom_text(x=55,y=0.20,label = "train")
-p2 <-ggplot(test, aes(x=duration)) +geom_histogram(aes(y=..density..),binwidth = 1, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+ylab("")+geom_text(x=55,y=0.20,label = "text")
+p2 <-ggplot(test, aes(x=duration)) +geom_histogram(aes(y=..density..),binwidth = 1, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+ylab("")+geom_text(x=55,y=0.20,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
  
@@ -157,7 +187,7 @@ grid.arrange(p1,p2,nrow= 1)
 
 ```{r}
 p1 <-ggplot(train, aes(x=residence_since)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")+geom_text(x=2.5,y=2,label = "train")
-p2 <-ggplot(test, aes(x=residence_since)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2,label = "text")
+p2 <-ggplot(test, aes(x=residence_since)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
 
@@ -165,23 +195,23 @@ grid.arrange(p1,p2,nrow= 1)
 
 ```{r}
 p1 <-ggplot(train, aes(x=Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "train")
-p2 <-ggplot(test, aes(x=Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "text")
+p2 <-ggplot(test, aes(x=Installment_rate)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
 
 ```
 
 ```{r}
-p1 <-ggplot(train, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
-p2 <-ggplot(test, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+p1 <-ggplot(train, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "train")
+p2 <-ggplot(test, aes(x=no.of_exist_cred)) +geom_histogram(aes(y=..density..),binwidth = 0.2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
  
 ```
 
 ```{r}
-p1 <-ggplot(train, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
-p2 <-ggplot(test, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)
+p1 <-ggplot(train, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "train")
+p2 <-ggplot(test, aes(x=Cred_amt)) +geom_histogram(aes(y=..density..),binwidth = 500, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=2.5,y=2.3,label = "test")
 
 grid.arrange(p1,p2,nrow= 1)
 ```
@@ -276,6 +306,42 @@ stat.desc(col, basic = FALSE)
 
 + The standard deviation of dependents and no._of_existing_credit is less than zero
 + The range of Cred_amt is big, so there is need of scaling.
+
+# EDA_Bivariate Analysis
+
+## 1. Feature vs Target Variable(Categorical Features)
+
+```{r}
+par(mfrow=c(1,4))
+ggplot(my_data,aes(x=saving_bond,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=check.acc.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=cred_hist.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x= Purpose,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=personal_status,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=other_debtors,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=property.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=other_install_plans,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=housing.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=job,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=telephone,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=foreign_worker,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+
+```
+
+## 2. Feature vs Target Variable(Numerical Features)
+
+```{r}
+par(mfrow=c(1,2))
+ggplot(my_data,aes(x=age,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=duration,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=Cred_amt,fill= status))+geom_bar(stat = "count",position = "dodge",width = 800)+facet_grid(~status)
+ggplot(my_data,aes(x=employ_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=Installment_rate,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=residence_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=no.of_exist_cred,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=dependents,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+```
+
 
 # Feature Processing
 
@@ -422,9 +488,13 @@ model_fr<- glm(status~.,train_new,family = binomial)
 * Confusion matrix for evaluating our model accuracy
 ```{r}
 valid_new$status.p <- ifelse(valid_new$status.p>0.5,1,0)
+valid_new$status <-as.factor(valid_new$status)
+valid_new$status.p <-as.factor(valid_new$status.p)
 con_mat <- table(valid_new$status,valid_new$status.p)
 model_score <-sum(diag(con_mat))/sum(con_mat)
  model_score
+mat <-caret::confusionMatrix(valid_new$status,valid_new$status.p)
+fourfoldplot(mat$table)
 ```
 ## Let's analyse the model
 
@@ -442,6 +512,14 @@ model_fr<- glm(status~cred_hist.+saving_bond+duration+Installment_rate+check.acc
  Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
  cat("AUC:",Auc_value)
 ```
+* Let's see the model summary
+
+```{r}
+summary(model_fr)
+```
+
+The AIC value for this model decreased, which is a good sign
+
  Confusion matrix for evaluating our model accuracy
 ```{r}
 
@@ -449,6 +527,10 @@ valid_new$status.p <- ifelse(valid_new$status.p>0.5,1,0)
 con_mat <- table(valid_new$status,valid_new$status.p)
 model_score <-sum(diag(con_mat))/sum(con_mat)
  model_score
+ valid_new$status <-as.factor(valid_new$status)
+valid_new$status.p <-as.factor(valid_new$status.p)
+mat <- caret::confusionMatrix(valid_new$status,valid_new$status.p)
+fourfoldplot(mat$table)
 ```
  * Though our accuracy went down a little, but including more features can cause overfitting so good to consider less features.
  
@@ -460,7 +542,10 @@ validation$status.p <- predict(model_dt,validation,type = "class")
  con_mat <- table(validation$status,validation$status.p)
 model_score <-sum(diag(con_mat))/sum(con_mat)
  model_score
-  head(validation$status.p)
+ validation$status <-as.factor(validation$status)
+validation$status.p <-as.factor(validation$status.p)
+p1 <-caret::confusionMatrix(validation$status,validation$status.p)
+fourfoldplot(p1$table)
  
  summary(model_dt)
  
@@ -471,7 +556,8 @@ model_score <-sum(diag(con_mat))/sum(con_mat)
 con_mat <- table(validation$status,validation$status.p)
 model_dtscore <- sum(diag(con_mat))/sum(con_mat)
 model_dtscore 
-
+p1 <-caret::confusionMatrix(validation$status,validation$status.p)
+fourfoldplot(p1$table)
 ```
  The score is more or less same, that means the attributes we removed were overfitting the model.
  
