@@ -83,6 +83,9 @@ str(my_data)
 summary(my_data)
 ```
 
+* Looking at the above summary and structure we can tell that there are 7 numerical attributes (features ) and no missing values in this data set.
+
+
 # Distribution Plot for the Numerical Data
 
 ```{r}
@@ -114,25 +117,16 @@ grid.arrange(p5,p6,nrow=1)
 ```
 *  Graphs are multimodal and slightly right skewed.
 
-
-# Countplots for categorical features
-
-* 
-
-
-```{r}
-
-```
-
   
 
 ```{r}
 ggplot(my_data, aes(x= dependents)) +geom_histogram(aes(y=..density..),binwidth = 0.01, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
 ```
 
+
 # Splitting Data (Train - Test - Validation )
 
-splitting the data into (60,20,20)%
+## Splitting the data into (60,20,20)%
 ```{r}
 set.seed(100)
 split_data <- sample(1:3, size=nrow(my_data), prob=c(0.600,0.200,0.200), replace = TRUE)
@@ -143,7 +137,7 @@ validation <- my_data[split_data==3,]
 
 #TRAIN & TEST DISTRIBUTION
 
-* Comparing test and train distribution by qq plot
+## Comparing test and train distribution by qq plot
 
 ```{r}
 p1 <- ggplot(train, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")
@@ -196,7 +190,7 @@ grid.arrange(p1,p2,nrow= 1)
 
 # UNIVARIATE ANALYSIS
 
-* **QQ plot**
+## QQ plot
 
 ```{r}
 qqnorm(train$age,main = "QQ Plot for age",xlab = "",ylab = "")
@@ -223,8 +217,7 @@ These qq plots helps us to compare our distribution with normal distribution
 
 # OUTLIER TREATMENT
 
-
-* *boxplot plot*
+## Box Plot
 
   + Boxplot helps us to analyse the skewness in our dataset and also to detect the outliers.
   + It is one of the way to display the distribution of data based on the five number summary.
@@ -271,6 +264,8 @@ table(boxplot.stats(train$residence_since)$out)
 boxplot.stats(train$Installment_rate)
 table(boxplot.stats(train$Installment_rate)$out)
 ```
+* This shows that Age, Cred_amt and duration attributes needs to be treated.
+
 
 # Statistical Information
 
@@ -278,6 +273,57 @@ table(boxplot.stats(train$Installment_rate)$out)
 col <- cbind(train$duration, train$Cred_amt, train$Installment_rate ,train$residence_since, train$age, train$no.of_exist_cred,train$dependents,train$status)
 stat.desc(col, basic = FALSE)
 ```
+
++ The standard deviation of dependents and no._of_existing_credit is less than zero
++ The range of Cred_amt is big, so there is need of scaling.
+
+# Feature Processing
+
+## Logarithmic Tranformation
+
+
+```{r}
+train$age <- log(train$age)
+train$Cred_amt <- log(train$Cred_amt)
+train$duration <- log(train$duration)
+```
+Now lets see it's effect:
+
+```{r}
+par(mfrow=c(1,3))
+qqnorm(train$age,main = "QQ Plot for age",xlab = "",ylab = "")
+ qqline(train$age,col = 3,lwd = 3)
+ 
+ qqnorm(train$duration,main = "QQ Plot for duration",xlab = "",ylab = "")
+qqline(train$duration,col = 3,lwd = 3)
+
+qqnorm(train$Cred_amt,main = "QQ Plot for Cred_amt",xlab = "",ylab = "")
+qqline(train$Cred_amt,col = 3,lwd = 3)
+
+
+par(mfrow=c(1,3))
+boxplot(train$age,col ="cornflowerblue",main="age")
+boxplot(train$Cred_amt,col ="cornflowerblue",main="Cred_amt")
+boxplot(train$duration,col ="cornflowerblue",main="duration")
+
+
+```
+
+After logarithmic tranformation there is reduction in skewness in features, which indirectly treats outlier problem
+
+
+## Standardisation
+
+```{r}
+train$duration <- scale(train$duration)
+train$age <- scale(train$age)
+train$Cred_amt <- scale(train$Cred_amt)
+validation$age <- scale(validation$age)
+validation$duration <- scale(validation$duration)
+validation$Cred_amt <- scale(validation$Cred_amt)
+```
+
+Scaling of above three attributes will take care of outliers while building models. 
 
 # Convetring categorical into numeric variables
 ```{r}
@@ -359,22 +405,36 @@ table(valid_new$foreign_worker)
 
 
 ```
+
+
+
+# Logistic Regression
 ```{r}
-model_log <- glm(status~check.acc.,train_new,family = binomial)
-
-library(ROCR)
-valid_new$status.p <- predict(model_log,valid_new,type = "response")
-pred_fit <- prediction(valid_new$status.p,valid_new$status)
-pred_perf <- performance(pred_fit,"tpr","fpr")
-plot(pred_perf)
-Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
-cat("AUC:",Auc_value)
-
-
+model_fr<- glm(status~.,train_new,family = binomial)
+ valid_new$status.p <- predict(model_fr,valid_new,type = "response")
+ pred_fit <- prediction(valid_new$status.p,valid_new$status)
+ pred_perf <- performance(pred_fit,"tpr","fpr")
+ plot(pred_perf)
+ Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
+ cat("AUC:",Auc_value)
+ head(valid_new$status.p)
 ```
+* Confusion matrix for evaluating our model accuracy
+```{r}
+valid_new$status.p <- ifelse(valid_new$status.p>0.5,1,0)
+con_mat <- table(valid_new$status,valid_new$status.p)
+model_score <-sum(diag(con_mat))/sum(con_mat)
+ model_score
+```
+## Let's analyse the model
 
 ```{r}
-model_fr<- glm(status~cred_hist.+saving_bond+other_debtors+property.+duration+Cred_amt,train_new,family = binomial)
+summary(model_fr)
+```
+* After looking at the z values of each attributes, we can say that some of the attributes may be overfitting the data or of negligible importance, so it is better to remove them. 
+
+```{r}
+model_fr<- glm(status~cred_hist.+saving_bond+duration+Installment_rate+check.acc.+employ_since+other_install_plans+foreign_worker+dependents+personal_status,train_new,family = binomial)
  valid_new$status.p <- predict(model_fr,valid_new,type = "response")
  pred_fit <- prediction(valid_new$status.p,valid_new$status)
  pred_perf <- performance(pred_fit,"tpr","fpr")
@@ -382,18 +442,25 @@ model_fr<- glm(status~cred_hist.+saving_bond+other_debtors+property.+duration+Cr
  Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
  cat("AUC:",Auc_value)
 ```
- 
+ Confusion matrix for evaluating our model accuracy
 ```{r}
 
+valid_new$status.p <- ifelse(valid_new$status.p>0.5,1,0)
+con_mat <- table(valid_new$status,valid_new$status.p)
+model_score <-sum(diag(con_mat))/sum(con_mat)
+ model_score
 ```
+ * Though our accuracy went down a little, but including more features can cause overfitting so good to consider less features.
  
- * *Decision tree*
+ 
+## Decision tree
 ```{r}
 model_dt<- rpart(status~.,train,method = "class")
 validation$status.p <- predict(model_dt,validation,type = "class")
  con_mat <- table(validation$status,validation$status.p)
 model_score <-sum(diag(con_mat))/sum(con_mat)
  model_score
+  head(validation$status.p)
  
  summary(model_dt)
  
@@ -407,4 +474,10 @@ model_dtscore
 
 ```
  The score is more or less same, that means the attributes we removed were overfitting the model.
+ 
+ # Observation 
+ 
+ * Looking at the scoring of both models, the following observations were made:
+   +logistic model > decision tree
+ 
  
