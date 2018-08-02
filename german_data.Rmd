@@ -12,6 +12,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(pastecs)
 library(ggplot2)
+library(randomForest)
 library(gridExtra)
 library(dplyr)
 library(ROCR)
@@ -70,12 +71,14 @@ my_data <- read.table("german.data",sep="",header=FALSE, col.names = c("check.ac
 ```
 
 Check missing data if any:
+
 ```{r}
 head(my_data)
 sum(is.na(my_data))
 ```
 
 Replacing the bad credit status with 0 value.
+
 ```{r}
 my_data$status[my_data$status==2]<-0
 table(my_data$status)
@@ -83,6 +86,7 @@ head(my_data)
 ```
 
 Check the structure and the summary of the data
+
 ```{r}
 str(my_data)
 summary(my_data)
@@ -120,9 +124,9 @@ p6 <- ggplot(my_data, aes(x = no.of_exist_cred)) +geom_histogram(aes(y=..density
 
 grid.arrange(p5,p6,nrow=1)
 ```
+
 *  Graphs are multimodal and slightly right skewed.
 
-  
 
 ```{r}
 ggplot(my_data, aes(x= dependents)) +geom_histogram(aes(y=..density..),binwidth = 0.01, colour = "black",fill= "grey")+ geom_density(alpha= 0.5, fill = "#FF6666")
@@ -132,31 +136,32 @@ ggplot(my_data, aes(x= dependents)) +geom_histogram(aes(y=..density..),binwidth 
 # Countplot for categorical data
 
 ```{r}
-ggplot(my_data,aes(x=saving_bond))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=personal_status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=check.acc.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=cred_hist.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=Purpose))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=other_debtors))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=property.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=other_install_plans))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=housing.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x= dependents))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x= job))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
-ggplot(my_data,aes(x=telephone))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=saving_bond))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=personal_status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=check.acc.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=cred_hist.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=Purpose))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=other_debtors))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=property.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=other_install_plans))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=housing.))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x= dependents))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x= job))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=telephone))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
 
 ```
 
 ## Target Variable
 
 ```{r}
-ggplot(my_data,aes(x=status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -1)
+ggplot(my_data,aes(x=status))+geom_bar(stat = "count",fill= "cornflowerblue",col="blue")+geom_text(stat='count',aes(label = ..count..),vjust = -0.5)
 ```
 
 
 # Splitting Data (Train - Test - Validation )
 
-## Splitting the data into (60,20,20)%
+## * Splitting the data into (60,20,20)%
+
 ```{r}
 set.seed(100)
 split_data <- sample(1:3, size=nrow(my_data), prob=c(0.600,0.200,0.200), replace = TRUE)
@@ -167,7 +172,7 @@ validation <- my_data[split_data==3,]
 
 #TRAIN & TEST DISTRIBUTION
 
-## Comparing test and train distribution by qq plot
+## * Comparing test and train distribution by qq plot
 
 ```{r}
 p1 <- ggplot(train, aes(x=age)) +geom_histogram(aes(y=..density..),binwidth = 2, colour = "black",fill= "cornflowerblue")+ geom_density(alpha= 0.5,colour = "blue4", lwd = 1)+geom_text(x=65,y=0.05,label = "train")
@@ -220,7 +225,7 @@ grid.arrange(p1,p2,nrow= 1)
 
 # UNIVARIATE ANALYSIS
 
-## QQ plot
+## * QQ plot
 
 ```{r}
 qqnorm(train$age,main = "QQ Plot for age",xlab = "",ylab = "")
@@ -247,7 +252,7 @@ These qq plots helps us to compare our distribution with normal distribution
 
 # OUTLIER TREATMENT
 
-## Box Plot
+## * Box Plot
 
   + Boxplot helps us to analyse the skewness in our dataset and also to detect the outliers.
   + It is one of the way to display the distribution of data based on the five number summary.
@@ -294,8 +299,8 @@ table(boxplot.stats(train$residence_since)$out)
 boxplot.stats(train$Installment_rate)
 table(boxplot.stats(train$Installment_rate)$out)
 ```
-* This shows that Age, Cred_amt and duration attributes needs to be treated.
 
+* This shows that Age, Cred_amt and duration attributes needs to be treated.
 
 # Statistical Information
 
@@ -313,18 +318,18 @@ stat.desc(col, basic = FALSE)
 
 ```{r}
 par(mfrow=c(1,4))
-ggplot(my_data,aes(x=saving_bond,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=check.acc.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=cred_hist.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x= Purpose,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=personal_status,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=other_debtors,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=property.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=other_install_plans,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=housing.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=job,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=telephone,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=foreign_worker,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=saving_bond,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=check.acc.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=cred_hist.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x= Purpose,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=personal_status,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=other_debtors,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=property.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=other_install_plans,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=housing.,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=job,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=telephone,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=foreign_worker,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
 
 ```
 
@@ -335,17 +340,17 @@ par(mfrow=c(1,2))
 ggplot(my_data,aes(x=age,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
 ggplot(my_data,aes(x=duration,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
 ggplot(my_data,aes(x=Cred_amt,fill= status))+geom_bar(stat = "count",position = "dodge",width = 800)+facet_grid(~status)
-ggplot(my_data,aes(x=employ_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=Installment_rate,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=residence_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=no.of_exist_cred,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
-ggplot(my_data,aes(x=dependents,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)
+ggplot(my_data,aes(x=employ_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=Installment_rate,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=residence_since,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=no.of_exist_cred,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
+ggplot(my_data,aes(x=dependents,fill= status))+geom_bar(stat = "count",position = "dodge")+facet_grid(~status)+geom_text(stat='count',aes(label = ..count..),vjust = -0.4)
 ```
 
 
 # Feature Processing
 
-## Logarithmic Tranformation
+## 1. Logarithmic Tranformation
 
 
 ```{r}
@@ -353,6 +358,7 @@ train$age <- log(train$age)
 train$Cred_amt <- log(train$Cred_amt)
 train$duration <- log(train$duration)
 ```
+
 Now lets see it's effect:
 
 ```{r}
@@ -391,7 +397,8 @@ validation$Cred_amt <- scale(validation$Cred_amt)
 
 Scaling of above three attributes will take care of outliers while building models. 
 
-# Convetring categorical into numeric variables
+## Convetring categorical into numeric variables
+
 ```{r}
 train_new<-train
 train_new$check.acc.<-ifelse(train_new$check.acc.=='A11',0,ifelse(train_new$check.acc.=='A12',1,ifelse(train_new$check.acc.=='A13',2,3)))
@@ -469,12 +476,15 @@ table(valid_new$telephone)
 valid_new$foreign_worker <- ifelse(valid_new$foreign_worker=='A201',0,1)
 table(valid_new$foreign_worker)
 
+class(train_new$age)
+
 
 ```
 
 
 
-# Logistic Regression
+##  Logistic Regression
+
 ```{r}
 model_fr<- glm(status~.,train_new,family = binomial)
  valid_new$status.p <- predict(model_fr,valid_new,type = "response")
@@ -494,8 +504,10 @@ con_mat <- table(valid_new$status,valid_new$status.p)
 model_score <-sum(diag(con_mat))/sum(con_mat)
  model_score
 mat <-caret::confusionMatrix(valid_new$status,valid_new$status.p)
+mat
 fourfoldplot(mat$table)
 ```
+
 ## Let's analyse the model
 
 ```{r}
@@ -512,7 +524,8 @@ model_fr<- glm(status~cred_hist.+saving_bond+duration+Installment_rate+check.acc
  Auc_value <- performance(pred_fit,measure = "auc")@y.values[[1]]
  cat("AUC:",Auc_value)
 ```
-* Let's see the model summary
+
+* Let's see the summary of the model
 
 ```{r}
 summary(model_fr)
@@ -521,6 +534,7 @@ summary(model_fr)
 The AIC value for this model decreased, which is a good sign
 
  Confusion matrix for evaluating our model accuracy
+ 
 ```{r}
 
 valid_new$status.p <- ifelse(valid_new$status.p>0.5,1,0)
@@ -530,12 +544,15 @@ model_score <-sum(diag(con_mat))/sum(con_mat)
  valid_new$status <-as.factor(valid_new$status)
 valid_new$status.p <-as.factor(valid_new$status.p)
 mat <- caret::confusionMatrix(valid_new$status,valid_new$status.p)
+mat
 fourfoldplot(mat$table)
 ```
+ 
  * Though our accuracy went down a little, but including more features can cause overfitting so good to consider less features.
  
  
-## Decision tree
+## 2. Decision tree
+
 ```{r}
 model_dt<- rpart(status~.,train,method = "class")
 validation$status.p <- predict(model_dt,validation,type = "class")
@@ -545,25 +562,91 @@ model_score <-sum(diag(con_mat))/sum(con_mat)
  validation$status <-as.factor(validation$status)
 validation$status.p <-as.factor(validation$status.p)
 p1 <-caret::confusionMatrix(validation$status,validation$status.p)
+p1
 fourfoldplot(p1$table)
  
  summary(model_dt)
  
 ```
+ 
  Looking at summary there are some attributes that have less number of significance. So let's remove them.
  
 ```{r}
-con_mat <- table(validation$status,validation$status.p)
-model_dtscore <- sum(diag(con_mat))/sum(con_mat)
-model_dtscore 
+model_dt<- rpart(status~cred_hist.+saving_bond+duration+check.acc.+employ_since+personal_status+age+Cred_amt+Purpose+property.+no.of_exist_cred,train, method = 'class')
+validation$status.p <- predict(model_dt,validation,type = "class")
+ con_mat <- table(validation$status,validation$status.p)
+model_score <-sum(diag(con_mat))/sum(con_mat)
+ model_score
+ validation$status <-as.factor(validation$status)
+validation$status.p <-as.factor(validation$status.p)
 p1 <-caret::confusionMatrix(validation$status,validation$status.p)
+p1
 fourfoldplot(p1$table)
+
 ```
- The score is more or less same, that means the attributes we removed were overfitting the model.
+
+ The score increases a little bit, that means the attributes we removed were overfitting the model.
  
- # Observation 
+## 3 Random_Forest
+
+For random forest we need to convert features class to factors and perform classification analysis.
+
+```{r}
+COl <- c(train_new$check.acc., train_new$cred_hist., train_new$Purpose ,train_new$saving_bond, train_new$personal_status, train_new$other_debtors,train_new$property.,train_new$other_install_plans,train_new$housing.,train_new$job,train_new$telephone,train_new$foreign_worker,train_new$employ_since,train_new$status)
+
+for (i in col){
+  i <- as.factor(i)
+}
+train_new$age <- as.integer(train_new$age)
+train_new$other_debtors <- as.factor(train_new$other_debtors)
+str(train_new)
+```
+
+ Building random forest model
  
+```{r}
+tuning <- tuneRF(train_new,train_new$status,stepFactor = 1.2,improve = 0.01,trace = T,plot = T)
+train_new$status <- as.factor(train_new$status)
+model_rf <-  randomForest(status~.,train_new,importance = T,type = 'classification')
+```
+
+
+## Analyse the features importance
+
+```{r}
+tuning
+model_rf
+model_rf$importance
+varImpPlot(model_rf,cex= 0.5)
+```
+
+* check.acc. feature has highest importance while foreign_worker has least importance in the model.
+* OOB error is least for 4 mtry.
+
+```{r}
+COl <- c(valid_new$check.acc., valid_new$cred_hist., valid_new$Purpose ,valid_new$saving_bond, valid_new$personal_status, valid_new$other_debtors,valid_new$property.,valid_new$other_install_plans,valid_new$housing.,valid_new$job,valid_new$telephone,valid_new$foreign_worker,valid_new$employ_since,valid_new$status)
+
+for (i in col){
+  i <- as.factor(i)
+}
+valid_new$other_debtors <- as.factor(valid_new$other_debtors)
+pred <- predict(model_rf,valid_new,type = "class")
+pred <- as.factor(pred)
+valid_new$status <- as.factor(valid_new$status)
+con_mat <- caret::confusionMatrix(table(valid_new$status,pred))
+con_mat
+fourfoldplot(con_mat$table)
+```
+
+
+# Observation 
+
  * Looking at the scoring of both models, the following observations were made:
-   +logistic model > decision tree
+
+    + Random_forest_Score:  0.7826
+    + Log_Regression_Score: 0.7488
+    + Decision_tree_Score:  0.7295
+ 
+  **Random_Forest > logistic model > decision tree**
  
  
